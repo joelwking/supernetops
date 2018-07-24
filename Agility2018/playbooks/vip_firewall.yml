@@ -1,0 +1,109 @@
+#!/usr/bin/ansible-playbook
+---
+#
+#      Copyright (c) 2018 World Wide Technology, Inc.
+#      All rights reserved.
+#
+#      author: Joel W. King,  World Wide Technology
+#
+#
+#      usage:     ./vip_firewall.yml -e "{'query': {'_id': '5b55ec11e349b51419e20cce'}}"  
+#            
+#                 ./vip_firewall.yml -e "@./files/super-netops.yml"
+#        
+#                  where file ./files/super-netops.yml looks like the following lines:
+#                  ---
+#                   query:
+#                     _id: 5b55ec11e349b51419e20cce
+#
+#
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#  Play: Retrieve configuration data
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+- name: Retrieve configuration data
+  hosts: localhost
+  gather_facts: yes
+  connection: local
+
+  vars_files:
+    - "{{ playbook_dir }}/passwords.yml" 
+    
+  vars:
+                                                           # Values typcially overridden with "-e" extra vars
+    provider:                                              
+      hostname: 'rocket.sandbox.wwtatc.local'
+      database: F5
+      collection: LTMv6
+    query:
+      _id: 5b55ec11e349b51419e20cce
+
+  tasks:
+    - name: Retrieve configuration data from MongoDB based on ObjectId
+      mongodb_iq:
+        host: "{{ provider.hostname }}"
+        database:  "{{ provider.database }}"
+        collection: "{{ provider.collection }}"
+        query: "{{ query }}"
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#  Play: Apply ACLs to firewall(s), retrieve configs, etc.
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+- name:   Update the firewalls in the group
+  hosts:  "{{ input.imdata.firewall.group }}"
+  gather_facts: yes
+
+  vars_files:
+    - "{{ playbook_dir }}/passwords.yml" 
+
+  vars:
+    iso8601: "{{ ansible_date_time.iso8601 }}"
+    input: "{{ hostvars['localhost']['ansible_facts'] }}"  # Contains all the facts and input data from localhost above
+    ansible_ssh_pass:  "{{ ios.password }}"                # Username and password are from the encrypted passwords.yml file
+    verb:                                                  # Define keyword to add or delete firewall entry
+      present: "permit"
+      absent: "no permit"
+    
+  tasks:
+    - debug: 
+        msg: " {{ item }} "
+        verbosity: 1
+      with_items: "{{ input.imdata.vips }}"
+
+    - name: Apply firewall changes
+      ios_config:
+        match: none
+        save_when: modified
+        lines: 
+          - "ip access-list extended {{ input.imdata.firewall.acl_name }}"
+          - "{{ verb[item.state] }} {{ item.protocol }} {{ item.source }} {{ item.wildcard_bits }} host {{ item.destination }} eq {{ item.port }}"
+      with_items: "{{ input.imdata.vips }}"
+      register: cfg_facts
+
+    - name: Retrieve the running configuration
+      ios_facts:
+        gather_subset:
+          - config
+      register: config
+
+    - name: Create documentation of the change request and running configuration
+      set_fact:
+        document: "{{ { 'iso8601': iso8601, 'config': config.ansible_facts, 'imdata': input.imdata, 'updates': cfg_facts.results } }}"
+
+    - name: Store the updated configuration artifacts
+      mongodb_iq:
+        host: "{{ input.imdata.audit.hostname }}"
+        database:  "{{ input.imdata.audit.database }}"
+        collection: "{{ input.imdata.audit.collection }}"
+        document: "{{ document }}"
+
+    - name: Update ticket with database ObjectId
+      snow_record:
+        instance: "{{ input.imdata.ticket.instance }}"
+        username: "{{ now.instance[input.imdata.ticket.instance].username }}"
+        password: "{{ now.instance[input.imdata.ticket.instance].password }}"
+        state: present
+        table: "{{ input.imdata.ticket.table }}"
+        number: "{{ input.imdata.ticket.number }}"
+        data:
+          work_notes : "Host: {{ inventory_hostname }} updated, Database:ObjectID:{{ _id }}"
+      tags: now
