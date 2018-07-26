@@ -1,0 +1,7 @@
+---
+    provider:                                              
+      hostname: 'localhost'
+      database: F5
+      collection: LTMv6
+    query:
+      _id: 5b59cc45e349b508b4e41536 

@@ -9,20 +9,21 @@
 #
 #      usage:     ./vip_firewall.yml -e "{'query': {'_id': '5b55ec11e349b51419e20cce'}}"  
 #            
-#                 ./vip_firewall.yml -e "@./files/super-netops.yml"
+#                 ./vip_firewall.yml -e "@./files/extra_vars.yml"
 #        
-#                  where file ./files/super-netops.yml looks like the following lines:
+#                  where file ./files/extra_vars.yml looks like the following lines:
 #                  ---
 #                   query:
 #                     _id: 5b55ec11e349b51419e20cce
 #
+#                  you can also override the provider values as well.
 #
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #  Play: Retrieve configuration data
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 - name: Retrieve configuration data
   hosts: localhost
-  gather_facts: yes
+  gather_facts: no
   connection: local
 
   vars_files:
@@ -65,7 +66,7 @@
     
   tasks:
     - debug: 
-        msg: " {{ item }} "
+        msg: " {{ item }} {{ input }}"
         verbosity: 1
       with_items: "{{ input.imdata.vips }}"
 
