@@ -32,7 +32,7 @@
   vars:
                                                            # Values typcially overridden with "-e" extra vars
     provider:                                              
-      hostname: 'rocket.sandbox.wwtatc.local'
+      hostname: 'localhost'
       database: F5
       collection: LTMv6
     query:
