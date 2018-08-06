@@ -107,4 +107,5 @@
         number: "{{ input.imdata.ticket.number }}"
         data:
           work_notes : "Host: {{ inventory_hostname }} updated, Database:ObjectID:{{ _id }}"
+          u_ObjectID : "{{ _id }}"
       tags: now
