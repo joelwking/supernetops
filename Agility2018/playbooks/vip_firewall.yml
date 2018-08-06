@@ -32,7 +32,7 @@
   vars:
                                                            # Values typcially overridden with "-e" extra vars
     provider:                                              
-      hostname: 'localhost'
+      hostname: localhost
       database: F5
       collection: LTMv6
     query:
@@ -107,5 +107,5 @@
         number: "{{ input.imdata.ticket.number }}"
         data:
           work_notes : "Host: {{ inventory_hostname }} updated, Database:ObjectID:{{ _id }}"
-          u_ObjectID : "{{ _id }}"
+          u_objectid : "{{ _id }}"
       tags: now
