@@ -97,7 +97,7 @@
         collection: "{{ input.imdata.audit.collection }}"
         document: "{{ document }}"
 
-    - name: Update ticket with database ObjectId
+    - name: Update ticket with audit database ObjectId
       snow_record:
         instance: "{{ input.imdata.ticket.instance }}"
         username: "{{ now.instance[input.imdata.ticket.instance].username }}"
@@ -107,5 +107,5 @@
         number: "{{ input.imdata.ticket.number }}"
         data:
           work_notes : "Host: {{ inventory_hostname }} updated, Database:ObjectID:{{ _id }}"
-          u_objectid : "{{ _id }}"
+          u_audit_database : "{{ input.imdata.ticket.instance }} {{ input.imdata.audit.database }} {{ input.imdata.audit.collection }}"
       tags: now
