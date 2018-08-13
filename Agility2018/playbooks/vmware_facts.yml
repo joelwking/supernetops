@@ -1,0 +1,44 @@
+#!/usr/bin/ansible-playbook
+---
+#
+#      Copyright (c) 2018 World Wide Technology, Inc.
+#      All rights reserved.
+#
+#      author: Joel W. King,  World Wide Technology
+#
+#      This playbook illustrates using vmware_vm_facts to query vCenter for the 
+#      IP address assigned via DHCP to a F5 BIG-IP Virtual Edition.
+#
+#      usage:
+#          ./vmware_facts.yml -v -e "target=f5-demo-test1.sandbox.wwtatc.local"
+#
+#          variable 'target' is the virtual machine name
+#
+- name: vmware_facts 
+  hosts: localhost 
+  connection: local
+  gather_facts: no
+
+  vars_files:
+    - "{{ playbook_dir }}/passwords.yml"
+    - "{{ playbook_dir }}/vcenter.yml"
+
+  vars: 
+    target: 'f5-demo-test1.sandbox.wwtatc.local'
+  
+  tasks:
+    - name: Query vCenter for management IP address
+      vmware_vm_facts:
+        hostname: "{{ vcenter.server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        validate_certs: no
+      register: vm_facts
+
+    - debug:
+        msg: "{{ target }} {{ vm_facts.virtual_machines[target] | to_nice_json(indent=4)  }}"
+      when: vm_facts.virtual_machines[target] is defined
+
+    - assert:
+        msg: "Invalid or no IP address"
+        that:  vm_facts.virtual_machines[target].ip_address | ipaddr 

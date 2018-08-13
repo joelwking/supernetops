@@ -14,17 +14,21 @@
     │   │   └── hosts.yml
     │   ├── library
     │   │   └── firewall_change_audit.py
-    │   └── vip_firewall.yml
+    │   ├── vip_firewall.yml
+    │   └── vmware_facts.yml
     └── README.md
 
 
 ### playbooks
 
 #### f5_drift.yml
-Demonstration playbook which illustrates using a dynamic inventory in Ansible with the Service Now *lb* table as the source of truth. It opens tickets for BIG-IP devices which are not at the desired version.
+Playbook which illustrates using a dynamic inventory in Ansible with the Service Now *lb* table as the source of truth. It opens tickets for BIG-IP devices which are not at the desired version.
+
+#### vmware_facts.yml
+Playbook which uses module `vmware_vm_facts` to query vCenter for the IP address assigned via DHCP to a F5 BIG-IP Virtual Edition.
 
 #### vip_firewall.yml
-Demonstration playbook shown in the You Tube video, the first play retrieves configuration data from the MongoDB, the second play applies ACLs to firewall(s), retrieves the firewall configs, updates the audit database and updates the ServiceNow change ticket for each firewall in the group.
+Playbook shown in the You Tube video, the first play retrieves configuration data from the MongoDB, the second play applies ACLs to firewall(s), retrieves the firewall configs, updates the audit database and updates the ServiceNow change ticket for each firewall in the group.
 
 #### library
 The Python program, `firewall_change_audit.py` illustrates how the audit database can be queried and a simple report generated to show changes made to the router ACL over time, showing the initiating ticket number, the commands issued to the target device, and the time of day. 
