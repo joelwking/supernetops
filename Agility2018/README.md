@@ -32,4 +32,4 @@ The file `vip_input.json` is an example of the JSON object loaded into the Mongo
 
 The file `extra_vars.yml` is simply a means to pass extra vars into an Ansible playbook.
 
-The *passwords_cleartext.yml* is an example of how to pass encrypted credentials to a playbook. Isolating credentials in a separate file is a means of limiting the scope of who has access to credentials.
+The `passwords_cleartext.yml` is an example of how to pass encrypted credentials to a playbook. Isolating credentials in a separate file is a means of limiting the scope of who has access to credentials.
