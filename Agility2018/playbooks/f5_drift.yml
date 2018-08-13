@@ -1,0 +1,85 @@
+#!/usr/bin/ansible-playbook
+---
+#
+#      Copyright (c) 2018 World Wide Technology, Inc.
+#      All rights reserved.
+#
+#      author: Joel W. King,  World Wide Technology
+#
+#      This playbook illustrates opening tickets in Service Now for F5 BIP-IP devices
+#      which are running a code version out of compliance with the standard.
+#
+#      It uses a dynamic inventory program for returning all the devices in the 
+#      'LB', load balancer table in Service Now.
+#
+#      usage:
+#          export NOW_INI=/home/administrator/ansible/playbooks/inventory/now/now.ini
+#          ./f5_drift.yml -i ./inventory/now/now.py -e "desired_version=13.04.01"
+#
+#      The passwords.yml file is structured for multiple instances, and looks like this:
+#
+#      now:
+#       instance:
+#         dev17569:
+#           username: admin
+#           password: bigsecret
+#         dev99999:
+#           username: foo
+#           password: bigsecret
+#
+#     References:
+#     www.thenetwork.engineer/blog/utilize-ansible-for-opening-and-closing-tickets-with-servicenow
+#     github.com/ServiceNowITOM/ansible-sn-inventory
+#
+- name:   F5 compliance check
+  hosts: "{{ target }}" 
+  gather_facts: no
+  connection: local
+
+  vars_files:
+    - "{{ playbook_dir }}/passwords.yml"                   # Encrypt with ansible-vault!
+
+  vars:
+    target: 
+      - f5-demo-test1.sandbox.wwtatc.local
+      - f5-demo-test2.sandbox.wwtatc.local
+
+    now_instance: dev17569
+    desired_state: present
+    table: problem                                       # incident, problem, change
+    desired_version: "13.01.02"                          # All F5 devices should be running
+
+  tasks:
+
+    - name: Query facts from a device
+      icontrol_gather_facts:
+        uri: "/mgmt/tm/cm/device"
+        host: "{{ inventory_hostname }}"
+        username: "{{ f5.username }}"
+        password: "{{ f5.password }}"
+
+    - name: Debug output the facts gathered
+      debug: 
+        msg: "{{ item.name }} {{ item.managementIp }} {{ item.fullPath }} {{ item.version }}"
+        verbosity: 1
+      with_items: "{{bigip_items}}"
+
+    - name: Create an incident, problem, change 
+      snow_record:
+        instance: "{{ now_instance }}"
+        username: "{{ now.instance[now_instance].username }}"
+        password: "{{ now.instance[now_instance].password }}"
+        state: "{{ desired_state }}"
+        table: "{{ table }}"
+        data:
+          short_description: "F5 version compliance check failed for {{ desired_version }}"
+          description: "{{ item.name }} : {{ item.marketingName }} : {{ item.build }} : {{ item.platformId }}"
+          severity: 3
+          priority: 5
+          state: -5
+          watch_list: "luke.wilson@example.com"
+          assigned_to: "fred.luddy@example.com"
+          work_notes : "Currently running version: {{ item.version }} as {{ item.failoverState }} state"
+          u_f5_selflink: "{{ item.selfLink }}"
+      with_items: "{{ bigip_items }}"
+      when: item.failoverState == 'active' and item.version != desired_version
